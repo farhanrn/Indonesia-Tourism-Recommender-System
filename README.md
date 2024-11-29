@@ -1,31 +1,31 @@
-# Laporan Peoyek Akhir Machine Learning - Farhan Rahman
+# Laporan Proyek Akhir Machine Learning - Farhan Rahman
 Parawisata - Rekomendasi Wisata Indonesia
 
-## Domain Proyek
+# Domain Proyek
 Industri pariwisata telah muncul sebagai penggerak utama pertumbuhan ekonomi di berbagai daerah. Organisasi Pariwisata Dunia (UNWTO) melaporkan bahwa kedatangan wisatawan internasional mencapai 1,5 miliar pada tahun 2019, dengan peningkatan 4% dibandingkan tahun sebelumnya [[1]](https://www.e-unwto.org/doi/abs/10.18111/wtobarometereng.2020.18.1.2). Tren pertumbuhan ini diperkirakan akan berlanjut, didorong oleh penemuan destinasi wisata baru dan dinamika yang berkembang dalam pasar pariwisata inbound dan outbound, terutama di negara-negara seperti Tiongkok dan Thailand [[2]](https://www.tandfonline.com/doi/full/10.1080/10941665.2020.1745855). Seiring dengan persiapan industri pariwisata untuk bangkit kembali, sangat penting untuk mengembangkan strategi dan kegiatan yang efektif guna memastikan pelayanan berkualitas bagi para wisatawan dan semua pemangku kepentingan yang terlibat. Persiapan ini harus melibatkan partisipasi semua pemangku kepentingan, dengan mengakui peran spesifik mereka [[3]](https://pwk.teknik.untan.ac.id/files/buku/fullbook-perencanaan-destinasi-pariwisata-compressed-compressed_1706694217.pdf). 
 
 Indonesia adalah negara yang memiliki wilayah yang luas serta keberanekaragaman sumber daya alam dan kebudayaan serta adat istiadatnya yang beragam merupakan potensi yang dimiliki oleh Indonesia untuk dijadikan modal dalam pengembangan sektor pariwisatanya. Potensi-potensi tersebut memiliki kelayakan untuk dikelola dengan maksimal untuk membangun sektor pariwisata di Indonesia [[4]](https://jurnal.stie-aas.ac.id/index.php/jie/article/viewFile/13101/pdf). Banyaknya jumlah destinasi wisata membuat orang bingung dalam memilih destinasi wisata yang sesuai. Sistem rekomendasi adalah cara yang tepat untuk membantu masyarakat Indonesia memilih destinasi wisata yang sesuai dengan preferensi mereka [[5]](https://jurnal-itsi.org/index.php/jitsi/article/view/254/120).
 
-## Business Understanding
-### Problem Statement
+# Business Understanding
+## Problem Statement
 - Bagaimana membuat sistem rekomendasi berdasarkan Kategori Wisata?
 - Bagaimana membuat sistem rekomendasi wista berdasarkan rating yang diberi user sebelumnya?
 
-### Goals
+## Goals
 - Membangun sistem rekomendasi berdasarkan Kategori Wisata 
 - Membangun cara membuat sistem rekomendasi wista berdasarkan rating yang diberi user sebelumnya
 
-### Solution Statement
+## Solution Statement
 Proyek ini bertujuan untuk menyelesaikan masalah dengan mengembangkan model machine learning yang mampu merekomendasikan destinasi wisata kepada pengguna. Rekomendasi ini didasarkan pada penilaian atau rating pengguna terhadap tempat wisata tertentu. Dalam pembuatan model, digunakan dua pendekatan utama, yaitu content-based filtering recommendation dan collaborative filtering recommendation.
 
-## Data Understanding
+# Data Understanding
 Dataset yang digunakan pada proyek ini adalah  `Indonesia Tourism Destination` yang diperoleh dari Kaggle. [Tautan pada Dataset dapat diakses pada tautan ini](https://www.kaggle.com/datasets/aprabowo/indonesia-tourism-destination)
 
 Struktur pada dataset adalah sebagai berikut
 
 ![Data](https://raw.githubusercontent.com/farhanrn/Indonesia-Tourism-Recommender-System/refs/heads/main/src/Data%20Explorer.png)
 
-### Place Tourism
+## Place Tourism
 Berikut deskripsi dataset place tourism (`tourism_with_id.csv`)
 | Nama Kolom | Tipe Data | Deskripsi |
 |---|---|---|
@@ -48,7 +48,7 @@ Dari hasil assessing data pada dataset place_tourism diperoleh bahwa :
 - Terdapat missing value pada kolom Time Minutes sebanyak 232 dan Unnamed :11 sebanyak 437. sehingga perlu dilakukan cleaning
 ```
 
-### Rating
+## Rating
 
 Berikut deskripsi dataset rating (`tourism_rating.csv`)
 
@@ -77,9 +77,11 @@ Jumlah Duplikat Data : 0
 Jumlah Null Data : 0
 ```
 
-### User
+## User
 
 Berikut deskripsi data `user.csv`
+
+Data user terdiri dari 300 baris dan 3 kolom
 
 
 | **Kolom**    | **Deskripsi**                                                       | **Tipe Data** |
@@ -88,9 +90,16 @@ Berikut deskripsi data `user.csv`
 | `Location`   | Lokasi pengguna yang mencakup kota dan provinsi.                    | String        |
 | `Age`        | Usia pengguna, dinyatakan dalam tahun.                              | Integer       |
 
+# Data Preparation
+## Content Based Filtering
 
-## Data Preprocessing
 ### Handling Missing Value in Dataset Place Tourism
+
+Missing value diatasi dengan cara imputasi menggunakan mean 
+```
+# Imputation to Time_Minutes column
+place_tourism['Time_Minutes'] = place_tourism['Time_Minutes'].fillna(place_tourism['Time_Minutes'].mean())
+```
 
 Dataset sebelum dilakukan handling
 
@@ -105,6 +114,164 @@ Dataset setelah dilakukan handling
 Karena kolom `unnamed:11` dan `Unnamed: 12` tidak diinginkan, sehingga dikeluarkan saja
 
 ``place_tourism.drop(['Unnamed: 11', 'Unnamed: 12'], axis=1, inplace=True)``
+
+
+
+### Feature Selection for Place_tourism
+Pada tahap ini, dataset place_tourism dan rating akan digabungkan untuk pemodelan content-based filtering. sehingga hanya beberapa kolom saja yang akan digunakan dalam dataset
+
+```
+place_tourism.drop(['Rating','Time_Minutes','Coordinate','Lat','Long'],axis=1,inplace=True)
+```
+Pada dataset ini hanya akan menggunakan Place_Id, Place_Name, Description, Category, City, dan Price 
+
+### Menggabungkan Data Place_Tourism dengan Rating
+
+```
+merged_data = pd.merge(rating.groupby('Place_Id')['Place_Ratings'].mean(),
+                       place_tourism,
+                       on='Place_Id')
+```
+### Text Processing
+
+Tujuan utama dari text processing adalah untuk mempersiapkan data teks agar dapat diproses oleh model machine learning. Text processing pada kode ini bertujuan untuk membersihkan dan mentransformasi data teks pada kolom 'Description' dan 'Category' agar lebih terstruktur dan informatif untuk proses content-based filtering.
+
+```
+stem = StemmerFactory().create_stemmer()
+stopword = StopWordRemoverFactory().create_stop_word_remover()
+
+def preprocessing(data):
+    data = data.lower()
+    data = stem.stem(data)
+    data = stopword.remove(data)
+    return data
+# Menyatukan Deskripsi dan Kategori ke dalam kolom Pattern
+data_content_based['Pattern'] = data_content_based['Description'] + ' ' + data_content_based['Category']
+# Menghilangkan kolom Price, Place Rating, Deskripsi, dan City
+data_content_based.drop(['Price','Place_Ratings','Description','City'],axis=1,inplace=True)
+
+# Menerapkan Function
+data_content_based['Pattern'] = data_content_based['Pattern'].apply(preprocessing)
+
+```
+
+- Case Folding: data = data.lower(): Mengubah semua teks menjadi huruf kecil untuk penyeragaman.
+- Stemming: data = stem.stem(data): Memotong imbuhan kata menjadi kata dasar menggunakan library Sastrawi. Contoh: "bermain" menjadi "main".
+- Stop Word Removal: data = stopword.remove(data): Menghilangkan kata-kata umum (stop words) seperti "yang", "dan", "di", dll., yang dianggap tidak memiliki makna penting dalam analisis teks.
+- Kode ini menerapkan fungsi preprocessing yang telah didefinisikan sebelumnya pada setiap baris data di kolom 'Pattern'.
+- Hasilnya, data teks di kolom 'Pattern' telah dibersihkan dan diubah menjadi bentuk yang lebih sederhana dan terstruktur, siap untuk digunakan dalam pemodelan content-based filtering.
+
+### TF-IDF
+TF-IDF adalah teknik dalam *Natural Language Processing (NLP)* yang digunakan untuk merepresentasikan teks dalam bentuk numerik. Teknik ini bertujuan untuk menilai seberapa penting suatu kata dalam sebuah dokumen relatif terhadap kumpulan dokumen (corpus). TF-IDF sering digunakan dalam sistem rekomendasi berbasis konten dan tugas seperti pencarian teks.
+
+TF-IDF terdiri dari dua komponen utama:
+1. **Term Frequency (TF)**: Mengukur seberapa sering sebuah kata muncul dalam dokumen tertentu.
+2. **Inverse Document Frequency (IDF)**: Mengukur pentingnya kata tersebut di seluruh dokumen dalam corpus.
+
+**TF-IDF Vectorizer**
+- Sebelum membangun sistem rekomendasi berbasis content-based filtering, persiapkan data dan simpan dalam variabel baru bernama *data*. 
+- Selanjutnya, buat sistem rekomendasi berdasarkan tempat wisata yang pernah dikunjungi sebelumnya dengan memanfaatkan **TF-IDF Vectorizer** dari pustaka *scikit-learn*. Langkah ini meliputi inisialisasi **TfidfVectorizer**, perhitungan nilai *idf* pada kolom *place_name*, serta pemetaan indeks fitur ke nama fitur.
+- Lakukan proses *fitting* dan transformasi pada fitur *place_name* untuk menghasilkan matriks representasi data.
+- Ubah vektor hasil transformasi *TF-IDF* menjadi matriks menggunakan fungsi `todense()`
+
+
+## Collaborative Filtering
+
+Data yang digunakan adalah data **`user`**
+
+
+### Mengubah userID menjadi list tanpa nilai yang sama dan Melakukan proses encoding angka ke ke userID
+
+Pada tahapan mengubah User_Id menjadi list unik, kode mengambil kolom User_Id dari data data_collaborative_filtering, lalu mengekstrak nilai unik dari kolom tersebut menggunakan .unique(). Hasilnya diubah menjadi list menggunakan .tolist() yang bertujuan untuk menghilangkan duplikasi nilai User_Id, sehingga hanya nilai unik yang digunakan. Hal ini penting untuk memastikan setiap pengguna di-encode hanya sekali.
+
+Selanjutnya, Membuat dictionary (user_to_user_encoded) yang memetakan setiap User_Id unik ke indeks angka menggunakan fungsi enumerate dengan tujuan untuk mengubah User_Id menjadi representasi numerik, yang lebih efisien untuk diproses oleh algoritma machine learning, terutama dalam operasi matriks seperti collaborative filtering.
+
+Terakhir, Membuat dictionary (user_encoded_to_user) yang merupakan kebalikan dari user_to_user_encoded. Dictionary ini memetakan indeks angka kembali ke nilai User_Id. Hal ini memungkinkan decoding hasil prediksi (yang dalam format numerik) kembali ke format asli User_Id agar lebih mudah dipahami atau
+ditampilkan.
+
+Sehingga hasil pada tahapan ini adalah sebagai berikut
+
+| userID | Encoded userID | Decoded userID |
+|--------|----------------|----------------|
+| 1      | 0              | 1              |
+| 2      | 1              | 2              |
+| 3      | 2              | 3              |
+| 4      | 3              | 4              |
+| 5      | 4              | 5              |
+| 6      | 5              | 6              |
+| 7      | 6              | 7              |
+| 8      | 7              | 8              |
+| 9      | 8              | 9              |
+| 10     | 9              | 10             |
+| ...    | ...            | ...            |
+| 300    | 299            | 300            |
+
+### Penyesuaian Data
+
+```
+
+# Mengubah placeID menjadi list tanpa nilai yang sama
+place_ids = data_collaborative_filtering['Place_Id'].unique().tolist()
+
+# Melakukan proses encoding placeID
+place_to_place_encoded = {x: i for i, x in enumerate(place_ids)}
+
+# Melakukan proses encoding angka ke placeID
+place_encoded_to_place = {i: x for i, x in enumerate(place_ids)}
+
+# Mapping userID ke dataframe user
+data_collaborative_filtering['user'] = data_collaborative_filtering['User_Id'].map(user_to_user_encoded)
+
+# Mapping placeID ke dataframe
+data_collaborative_filtering['place_encoded'] = data_collaborative_filtering['Place_Id'].map(place_to_place_encoded)
+
+# Mendapatkan jumlah user
+num_users = len(user_to_user_encoded)
+print(num_users)
+
+# Mendapatkan jumlah resto
+num_place = len(place_to_place_encoded)
+print(num_place)
+
+# Mengubah rating menjadi nilai float
+data_collaborative_filtering['Place_Ratings'] = data_collaborative_filtering['Place_Ratings'].values.astype(np.float32)
+
+# Nilai minimum rating
+min_rating = min(data_collaborative_filtering['Place_Ratings'])
+
+# Nilai maksimal rating
+max_rating = max(data_collaborative_filtering['Place_Ratings'])
+
+print('Number of User: {}, Number of Places: {}, Min Rating: {}, Max Rating: {}'.format(
+    num_users, num_place, min_rating, max_rating
+))
+
+```
+
+Pertama, kode ini mengambil nilai unik dari kolom Place_Id dalam dataframe data_collaborative_filtering dan mengubahnya menjadi sebuah list tanpa nilai yang sama. Selanjutnya, dilakukan encoding terhadap Place_Id dengan membuat dua dictionary: place_to_place_encoded, yang memetakan setiap Place_Id ke indeks numerik yang unik, dan place_encoded_to_place, yang melakukan pemetaan terbalik dari indeks ke Place_Id.
+
+Kemudian, kode ini memetakan User_Id ke dataframe dengan menggunakan dictionary user_to_user_encoded, sehingga setiap pengguna mendapatkan representasi numerik. Selanjutnya, Place_Id juga dipetakan ke dataframe menggunakan dictionary place_to_place_encoded, menghasilkan kolom baru bernama place_encoded.
+
+Setelah proses pemetaan, kode menghitung jumlah pengguna dan jumlah tempat yang ada dalam data dengan menghitung panjang dari dictionary yang telah dibuat. Selain itu, rating tempat diubah menjadi tipe data float untuk memudahkan analisis lebih lanjut. Kode ini juga menentukan nilai minimum dan maksimum dari rating yang diberikan. Terakhir, informasi mengenai jumlah pengguna, jumlah tempat, serta nilai minimum dan maksimum rating dicetak ke layar dalam format yang jelas. Kode ini secara keseluruhan bertujuan untuk mempersiapkan data agar siap digunakan dalam algoritma rekomendasi.
+Relate
+
+Output :
+
+```
+300
+437
+Number of User: 300, Number of Places: 437, Min Rating: 1.0, Max Rating: 5.0
+```
+
+
+### Split Data
+Dua kolom dari dataframe data_collaborative_filtering diambil, yaitu user dan place_encoded, dan mengubahnya menjadi array numpy yang disimpan dalam variabel x. Array ini akan digunakan sebagai fitur input untuk model, di mana setiap baris mewakili pasangan pengguna dan tempat.
+
+Selanjutnya, kode membuat variabel y, yang berisi rating tempat yang telah dinormalisasi. Proses normalisasi dilakukan dengan menggunakan rumus min-max scaling, di mana setiap rating dikurangi dengan nilai minimum (min_rating) dan dibagi dengan rentang rating (selisih antara nilai maksimum dan minimum). Hasilnya adalah rating yang berada dalam rentang 0 hingga 1, yang lebih mudah digunakan dalam model pembelajaran mesin.
+
+Setelah itu, **data dibagi menjadi dua set: 80% untuk data pelatihan (train) dan 20% untuk data validasi (validation)**. Indeks pemisahan ditentukan dengan menghitung 80% dari jumlah total baris dalam dataframe. Kemudian, x_train dan y_train berisi data pelatihan, sedangkan x_val dan y_val berisi data validasi.
+
+Terakhir, kode mencetak nilai dari x dan y, memberikan gambaran tentang data yang telah dipersiapkan untuk digunakan dalam pelatihan model rekomendasi. Proses ini penting untuk memastikan bahwa model dapat belajar dari data yang representatif dan juga dapat diuji pada data yang tidak terlihat sebelumnya untuk mengevaluasi performanya.
 
 
 ## Exploratory Data Analysis
@@ -151,7 +318,7 @@ Berdasarkan grafik distribusi rating tempat wisata dengan KDE, terlihat bahwa se
 
 ![](https://raw.githubusercontent.com/farhanrn/Indonesia-Tourism-Recommender-System/refs/heads/main/src/EDA-USER-LOCATION.png)
 
-Berdasarkan visualisasi data, terlihat bahwa lokasi wisata terbanyak berada di Jakarta, diikuti oleh Bogor dan Bandung. Jumlah lokasi wisata di Jakarta jauh lebih banyak dibandingkan dengan kota-kota lainnya dalam dataset. Sebaliknya, lokasi wisata paling sedikit berada di Yogyakarta, Surabaya, dan Malang. Hal ini mengindikasikan bahwa Jakarta merupakan pusat wisata yang populer, sementara kota-kota seperti Yogyakarta, Surabaya, dan Malang mungkin memiliki daya tarik wisata yang lebih sedikit atau kurang dikenal oleh pengguna dalam dataset.
+Berdasarkan visualisasi data, terlihat bahwa lokasi wisata terbanyak berada di Jawa Barat, diikuti oleh Semarang dan Yogyakarta. Selanjutnya, yang menjadi tempat lokasi wisata paling sedikit adalah Nganjuk dan Madura
 
 - Age
 
@@ -159,71 +326,14 @@ Berdasarkan visualisasi data, terlihat bahwa lokasi wisata terbanyak berada di J
 
 Berdasarkan analisis distribusi usia pengunjung, diketahui bahwa mayoritas pengunjung berusia antara 20 hingga 30 tahun. Distribusi data usia cenderung terdistribusi normal dengan sedikit kemiringan ke kanan (right-skewed), mengindikasikan adanya beberapa pengunjung dengan usia yang lebih tua. Meskipun terdapat outlier pada data usia, namun secara umum dapat disimpulkan bahwa tempat wisata tersebut lebih banyak dikunjungi oleh kalangan muda. Hal ini dapat menjadi pertimbangan dalam strategi pemasaran dan pengembangan produk wisata yang disesuaikan dengan preferensi dan kebutuhan pengunjung dari rentang usia tersebut.
 
-## Data Preprocessing : Content-Based Filtering
-Pada tahap ini, dataset place_tourism dan rating akan digabungkan untuk pemodelan content-based filtering. sehingga hanya beberapa kolom saja yang akan digunakan dalam dataset
 
-### Feature Selection for Place_tourism
-
-```
-place_tourism.drop(['Rating','Time_Minutes','Coordinate','Lat','Long'],axis=1,inplace=True)
-```
-Pada dataset ini hanya akan menggunakan Place_Id, Place_Name, Description, Category, City, dan Price 
-
-### Menggabungkan Data Place_Tourism dengan Rating
-
-```
-merged_data = pd.merge(rating.groupby('Place_Id')['Place_Ratings'].mean(),
-                       place_tourism,
-                       on='Place_Id')
-```
-### Text Processing
-
-Tujuan utama dari text processing adalah untuk mempersiapkan data teks agar dapat diproses oleh model machine learning. Text processing pada kode ini bertujuan untuk membersihkan dan mentransformasi data teks pada kolom 'Description' dan 'Category' agar lebih terstruktur dan informatif untuk proses content-based filtering.
-
-```
-stem = StemmerFactory().create_stemmer()
-stopword = StopWordRemoverFactory().create_stop_word_remover()
-
-def preprocessing(data):
-    data = data.lower()
-    data = stem.stem(data)
-    data = stopword.remove(data)
-    return data
-# Menyatukan Deskripsi dan Kategori ke dalam kolom Pattern
-data_content_based['Pattern'] = data_content_based['Description'] + ' ' + data_content_based['Category']
-# Menghilangkan kolom Price, Place Rating, Deskripsi, dan City
-data_content_based.drop(['Price','Place_Ratings','Description','City'],axis=1,inplace=True)
-
-# Menerapkan Function
-data_content_based['Pattern'] = data_content_based['Pattern'].apply(preprocessing)
-
-```
-
-- Case Folding: data = data.lower(): Mengubah semua teks menjadi huruf kecil untuk penyeragaman.
-- Stemming: data = stem.stem(data): Memotong imbuhan kata menjadi kata dasar menggunakan library Sastrawi. Contoh: "bermain" menjadi "main".
-- Stop Word Removal: data = stopword.remove(data): Menghilangkan kata-kata umum (stop words) seperti "yang", "dan", "di", dll., yang dianggap tidak memiliki makna penting dalam analisis teks.
-- Kode ini menerapkan fungsi preprocessing yang telah didefinisikan sebelumnya pada setiap baris data di kolom 'Pattern'.
-- Hasilnya, data teks di kolom 'Pattern' telah dibersihkan dan diubah menjadi bentuk yang lebih sederhana dan terstruktur, siap untuk digunakan dalam pemodelan content-based filtering.
-
-
-## Modeling Content-Based Filtering
+# Modeling and Result
+## Content-Based Filtering
 
 Content-based filtering adalah pendekatan dalam sistem rekomendasi yang memberikan rekomendasi kepada pengguna berdasarkan karakteristik atau atribut dari item yang disukai atau digunakan oleh pengguna tersebut sebelumnya. Model ini berfokus pada analisis konten dari item dan mencari item serupa untuk direkomendasikan.
 
-Beberapa langkah yang dilakukan dalam membangun sistem rekomendasi menggunakan pendekatan content-based filtering meliputi penggunaan TF-IDF Vectorizer, perhitungan kesamaan menggunakan cosine similarity, serta pengujian sistem rekomendasi.
+Beberapa langkah yang dilakukan dalam membangun sistem rekomendasi menggunakan pendekatan content-based filtering meliputi cosine similarity, serta pengujian sistem rekomendasi.
 
-### TF-IDF
-TF-IDF adalah teknik dalam *Natural Language Processing (NLP)* yang digunakan untuk merepresentasikan teks dalam bentuk numerik. Teknik ini bertujuan untuk menilai seberapa penting suatu kata dalam sebuah dokumen relatif terhadap kumpulan dokumen (corpus). TF-IDF sering digunakan dalam sistem rekomendasi berbasis konten dan tugas seperti pencarian teks.
-
-TF-IDF terdiri dari dua komponen utama:
-1. **Term Frequency (TF)**: Mengukur seberapa sering sebuah kata muncul dalam dokumen tertentu.
-2. **Inverse Document Frequency (IDF)**: Mengukur pentingnya kata tersebut di seluruh dokumen dalam corpus.
-
-**TF-IDF Vectorizer**
-- Sebelum membangun sistem rekomendasi berbasis content-based filtering, persiapkan data dan simpan dalam variabel baru bernama *data*. 
-- Selanjutnya, buat sistem rekomendasi berdasarkan tempat wisata yang pernah dikunjungi sebelumnya dengan memanfaatkan **TF-IDF Vectorizer** dari pustaka *scikit-learn*. Langkah ini meliputi inisialisasi **TfidfVectorizer**, perhitungan nilai *idf* pada kolom *place_name*, serta pemetaan indeks fitur ke nama fitur.
-- Lakukan proses *fitting* dan transformasi pada fitur *place_name* untuk menghasilkan matriks representasi data.
-- Ubah vektor hasil transformasi *TF-IDF* menjadi matriks menggunakan fungsi `todense()`.
 
 ### Cosine Similarity
 
@@ -276,7 +386,7 @@ Parameter Fungsi
 4. **`k`**  
    Jumlah rekomendasi yang ingin dihasilkan (default: 10).  
 
-## Kelebihan dan Kekurangan Content-Based Filtering
+#### Kelebihan dan Kekurangan Content-Based Filtering
 Content-based filtering adalah salah satu pendekatan dalam sistem rekomendasi yang menggunakan informasi atau atribut dari item dan preferensi pengguna untuk memberikan rekomendasi. Berikut adalah kelebihan dan kekurangan dari metode ini:
 
 **Kelebihan:**
@@ -296,107 +406,71 @@ Tidak Menangkap Keanekaragaman
 - Sistem cenderung merekomendasikan item yang mirip dengan item yang disukai sebelumnya, sehingga rentan terhadap masalah overspecialization (tidak memberikan rekomendasi yang beragam).
 Kesulitan pada Preferensi Baru
 
-## Modeling Collaborative Filtering
+### Hasil Pada Content-Based Filtering Model
+### Hasil pada Skenario 1
+Skenario 1 adalah mencari rekomendasi tempat pada **Candi Prambanan**
+```
+# Skenario 1 : Candi Prambanan
+recommend_by_content_based_filtering('Candi Prambanan')
+```
+hasilnya adalah 
+| Place_Name   | Category       | similarity_score |
+|:-------------|:---------------:|------------------|
+| Keraton Yogyakarta     | Budaya         | 0.634871          |
+| Tebing Breksi           | Budaya         | 0.553593          |
+| Candi Donotirto         | Budaya         | 0.488287          |
+| Puncak Pinus Becici      | Taman Hiburan   | 0.407251          |
+| Candi Borobudur         | Budaya         | 0.305599          |
+| Candi Ijo               | Budaya         | 0.222767          |
+| Candi Ratu Boko         | Budaya         | 0.207963          |
+| Candi Sewu              | Budaya         | 0.170799          |
+| Candi Gedong Songo      | Budaya         | 0.096699          |
+| Pura Giri Natha         | Budaya         | 0.096278          |
+
+### Hasil pada Skenario 2
+Skenario 2 adalah mencari rekomendasi tempat pada **Museum Basoeki Abdullah**
+```
+# Case 2 : Museum Basoeki Abdullah
+recommend_by_content_based_filtering('Museum Basoeki Abdullah')
+```
+
+Hasil dari kode :
+| Place_Name                          | Category | similarity_score |
+|-------------------------------------|----------|------------------|
+| Museum Taman Prasasti              | Budaya   | 0.249897         |
+| Museum Wayang                       | Budaya   | 0.215493         |
+| Museum Nasional                     | Budaya   | 0.212838         |
+| Museum Bahari Jakarta               | Budaya   | 0.209531         |
+| Museum Seni Rupa dan Kramik        | Budaya   | 0.207353         |
+| Museum Tengah Kebun                 | Budaya   | 0.203953         |
+| De Mata Museum Jogja                | Budaya   | 0.197842         |
+| Museum Sonobudoyo Unit I            | Budaya   | 0.190391         |
+| Museum Barli                        | Budaya   | 0.185569         |
+| Museum Pendidikan Nasional           | Budaya   | 0.174056         |
+
+### Hasil pada Skenario 3
+Skenario 3 adalah mencari rekomendasi tempat pada **Dunia Fantasi**
+
+`recommend_by_content_based_filtering('Dunia Fantasi')`
+
+menghasilkan output 
+| Place_Name                                | Category      | similarity_score |
+|-------------------------------------------|---------------|------------------|
+| Taman Mini Indonesia Indah (TMII)        | Taman Hiburan | 0.469224         |
+| Taman Impian Jaya Ancol                  | Taman Hiburan | 0.189286         |
+| Pelabuhan Marina                          | Bahari       | 0.140093         |
+| Kidzania                                  | Taman Hiburan | 0.129180         |
+| Sea World                                 | Taman Hiburan | 0.119722         |
+| Jakarta Aquarium dan Safari               | Taman Hiburan | 0.119421         |
+| Taman Situ Lembang                        | Taman Hiburan | 0.116117         |
+| Pantai Ancol                              | Bahari       | 0.114812         |
+| Taman Spathodea                          | Taman Hiburan | 0.113678         |
+| Taman Balai Kota Bandung                  | Taman Hiburan | 0.112755         |
+
+
+## Collaborative Filtering
 
 Collaborative Filtering adalah pendekatan dalam sistem rekomendasi yang membuat prediksi atau rekomendasi item berdasarkan perilaku, preferensi, atau interaksi pengguna dengan item, tanpa memerlukan atribut spesifik dari item tersebut. Teknik ini memanfaatkan data dari komunitas pengguna untuk menemukan pola kesamaan antara pengguna atau item.
-
-### Data Understanding
-Data yang digunakan adalah data **`user`**
-
-## Data Preparation
-**Mengubah userID menjadi list tanpa nilai yang sama dan Melakukan proses encoding angka ke ke userID**
-
-Pada tahapan mengubah User_Id menjadi list unik, kode mengambil kolom User_Id dari data data_collaborative_filtering, lalu mengekstrak nilai unik dari kolom tersebut menggunakan .unique(). Hasilnya diubah menjadi list menggunakan .tolist() yang bertujuan untuk menghilangkan duplikasi nilai User_Id, sehingga hanya nilai unik yang digunakan. Hal ini penting untuk memastikan setiap pengguna di-encode hanya sekali.
-
-Selanjutnya, Membuat dictionary (user_to_user_encoded) yang memetakan setiap User_Id unik ke indeks angka menggunakan fungsi enumerate dengan tujuan untuk mengubah User_Id menjadi representasi numerik, yang lebih efisien untuk diproses oleh algoritma machine learning, terutama dalam operasi matriks seperti collaborative filtering.
-
-Terakhir, Membuat dictionary (user_encoded_to_user) yang merupakan kebalikan dari user_to_user_encoded. Dictionary ini memetakan indeks angka kembali ke nilai User_Id. Hal ini memungkinkan decoding hasil prediksi (yang dalam format numerik) kembali ke format asli User_Id agar lebih mudah dipahami atau
-ditampilkan.
-
-Sehingga hasil pada tahapan ini adalah sebagai berikut
-
-| userID | Encoded userID | Decoded userID |
-|--------|----------------|----------------|
-| 1      | 0              | 1              |
-| 2      | 1              | 2              |
-| 3      | 2              | 3              |
-| 4      | 3              | 4              |
-| 5      | 4              | 5              |
-| 6      | 5              | 6              |
-| 7      | 6              | 7              |
-| 8      | 7              | 8              |
-| 9      | 8              | 9              |
-| 10     | 9              | 10             |
-| ...    | ...            | ...            |
-| 300    | 299            | 300            |
-
-## Penyesuaian Data
-
-```
-
-# Mengubah placeID menjadi list tanpa nilai yang sama
-place_ids = data_collaborative_filtering['Place_Id'].unique().tolist()
-
-# Melakukan proses encoding placeID
-place_to_place_encoded = {x: i for i, x in enumerate(place_ids)}
-
-# Melakukan proses encoding angka ke placeID
-place_encoded_to_place = {i: x for i, x in enumerate(place_ids)}
-
-# Mapping userID ke dataframe user
-data_collaborative_filtering['user'] = data_collaborative_filtering['User_Id'].map(user_to_user_encoded)
-
-# Mapping placeID ke dataframe
-data_collaborative_filtering['place_encoded'] = data_collaborative_filtering['Place_Id'].map(place_to_place_encoded)
-
-# Mendapatkan jumlah user
-num_users = len(user_to_user_encoded)
-print(num_users)
-
-# Mendapatkan jumlah resto
-num_place = len(place_to_place_encoded)
-print(num_place)
-
-# Mengubah rating menjadi nilai float
-data_collaborative_filtering['Place_Ratings'] = data_collaborative_filtering['Place_Ratings'].values.astype(np.float32)
-
-# Nilai minimum rating
-min_rating = min(data_collaborative_filtering['Place_Ratings'])
-
-# Nilai maksimal rating
-max_rating = max(data_collaborative_filtering['Place_Ratings'])
-
-print('Number of User: {}, Number of Places: {}, Min Rating: {}, Max Rating: {}'.format(
-    num_users, num_place, min_rating, max_rating
-))
-
-```
-Kode di atas merupakan bagian dari proses pemrosesan data untuk sistem rekomendasi berbasis kolaboratif filtering. Pertama, kode ini mengambil nilai unik dari kolom Place_Id dalam dataframe data_collaborative_filtering dan mengubahnya menjadi sebuah list tanpa nilai yang sama. Selanjutnya, dilakukan encoding terhadap Place_Id dengan membuat dua dictionary: place_to_place_encoded, yang memetakan setiap Place_Id ke indeks numerik yang unik, dan place_encoded_to_place, yang melakukan pemetaan terbalik dari indeks ke Place_Id.
-
-Kemudian, kode ini memetakan User_Id ke dataframe dengan menggunakan dictionary user_to_user_encoded, sehingga setiap pengguna mendapatkan representasi numerik. Selanjutnya, Place_Id juga dipetakan ke dataframe menggunakan dictionary place_to_place_encoded, menghasilkan kolom baru bernama place_encoded.
-
-Setelah proses pemetaan, kode menghitung jumlah pengguna dan jumlah tempat yang ada dalam data dengan menghitung panjang dari dictionary yang telah dibuat. Selain itu, rating tempat diubah menjadi tipe data float untuk memudahkan analisis lebih lanjut. Kode ini juga menentukan nilai minimum dan maksimum dari rating yang diberikan. Terakhir, informasi mengenai jumlah pengguna, jumlah tempat, serta nilai minimum dan maksimum rating dicetak ke layar dalam format yang jelas. Kode ini secara keseluruhan bertujuan untuk mempersiapkan data agar siap digunakan dalam algoritma rekomendasi.
-Relate
-
-Output :
-
-```
-300
-437
-Number of User: 300, Number of Places: 437, Min Rating: 1.0, Max Rating: 5.0
-```
-
-
-## Spliting
-Dua kolom dari dataframe data_collaborative_filtering diambil, yaitu user dan place_encoded, dan mengubahnya menjadi array numpy yang disimpan dalam variabel x. Array ini akan digunakan sebagai fitur input untuk model, di mana setiap baris mewakili pasangan pengguna dan tempat.
-
-Selanjutnya, kode membuat variabel y, yang berisi rating tempat yang telah dinormalisasi. Proses normalisasi dilakukan dengan menggunakan rumus min-max scaling, di mana setiap rating dikurangi dengan nilai minimum (min_rating) dan dibagi dengan rentang rating (selisih antara nilai maksimum dan minimum). Hasilnya adalah rating yang berada dalam rentang 0 hingga 1, yang lebih mudah digunakan dalam model pembelajaran mesin.
-
-Setelah itu, **data dibagi menjadi dua set: 80% untuk data pelatihan (train) dan 20% untuk data validasi (validation)**. Indeks pemisahan ditentukan dengan menghitung 80% dari jumlah total baris dalam dataframe. Kemudian, x_train dan y_train berisi data pelatihan, sedangkan x_val dan y_val berisi data validasi.
-
-Terakhir, kode mencetak nilai dari x dan y, memberikan gambaran tentang data yang telah dipersiapkan untuk digunakan dalam pelatihan model rekomendasi. Proses ini penting untuk memastikan bahwa model dapat belajar dari data yang representatif dan juga dapat diuji pada data yang tidak terlihat sebelumnya untuk mengevaluasi performanya.
-
-## Model Development and Training of Colaborative Filtering
 Model pada Colaborative filtering dibuat sebanyak 2, yaitu **`RecommenderNet`** dan **`RecommenderNetv2`**
 
 ### RecommenderNet
@@ -472,7 +546,52 @@ Input:
 **Aktivasi:**
 Model menggunakan fungsi aktivasi sigmoid (tf.nn.sigmoid(x)) pada output akhir. Fungsi sigmoid mengubah nilai prediksi menjadi rentang antara 0 dan 1, yang cocok untuk masalah regresi biner atau probabilitas rating.
 
-## RecommenderNetv2
+### RecommenderNetv2
+
+Kode model pada RecommenderNetv2
+
+```
+class RecommenderNetV2(tf.keras.Model):
+    def __init__(self, num_users, num_place, embedding_size, **kwargs):
+        super(RecommenderNet, self).__init__(**kwargs)
+        self.num_users = num_users
+        self.num_place = num_place
+        self.embedding_size = embedding_size
+
+        self.user_embedding = layers.Embedding(
+            num_users,
+            embedding_size,
+            embeddings_initializer='he_normal',
+            embeddings_regularizer=keras.regularizers.l2(1e-6)
+        )
+        self.user_bias = layers.Embedding(num_users, 1)
+        self.place_embedding = layers.Embedding(
+            num_place,
+            embedding_size,
+            embeddings_initializer='he_normal',
+            embeddings_regularizer=keras.regularizers.l2(1e-6)
+        )
+        self.place_bias = layers.Embedding(num_place, 1)
+
+    def call(self, inputs):
+        user_vector = self.user_embedding(inputs[:, 0])
+        user_bias = self.user_bias(inputs[:, 0])
+        place_vector = self.place_embedding(inputs[:, 1])
+        place_bias = self.place_bias(inputs[:, 1])
+
+        dot_user_place = tf.tensordot(user_vector, place_vector, 2)
+
+        # Combine the results
+        x = dot_user_place + user_bias + place_bias
+        x = tf.nn.sigmoid(x)  # Use sigmoid if your target is between 0 and 1
+
+        # Add additional dense layers for more complexity
+        x = layers.Dense(64, activation='relu')(x)
+        x = layers.Dropout(0.2)(x)  # Dropout for regularization
+        x = layers.Dense(32, activation='relu')(x)
+
+        return x  # Return the final output (no activation for regression)
+```
 
 Model `RecommenderNetV2` adalah jaringan saraf yang dirancang untuk sistem rekomendasi menggunakan teknik embedding dan lapisan dense tambahan. Berikut adalah rincian dari arsitektur model ini.
 
@@ -529,34 +648,45 @@ Setelah menghitung nilai prediksi dasar, model menambahkan beberapa lapisan dens
 - **Lapisan Dense Kedua**: 
   - Menggunakan 32 neuron dengan fungsi aktivasi ReLU. Ini memberikan lapisan tambahan untuk memperdalam representasi fitur sebelum menghasilkan output akhir.
 
+### Hasil Pada Collaborative Filtering Model
+
+Berikut hasil yang diperoleh oleh Collaborative Filtering Model
+
+```
+Showing recommendations for users: 173
+===========================
+Places with high ratings from user
+--------------------------------
+Taman Hutan Tebet
+Museum Sonobudoyo Unit I
+Pesona Nirwana Waterpark & Cottages
+Kota Mini
+Food Junction Grand Pakuwon
+--------------------------------
+Top 10 place recommendation
+--------------------------------
+Taman Pintar Yogyakarta
+Taman Pelangi Yogyakarta
+Bentara Budaya Yogyakarta (BBY)
+Pantai Patihan
+Pantai Greweng
+Kampung Korea Bandung
+Sanghyang Heuleut
+Chingu Cafe Little Seoul
+Wisata Lereng Kelir
+Hutan Bambu Keputih
+```
+Untuk pengguna 173, beberapa tempat dengan rating tinggi yang disukai mencakup Taman Hutan Tebet, Museum Sonobudoyo Unit I, Pesona Nirwana Waterpark & Cottages, Kota Mini, dan Food Junction Grand Pakuwon. Hal ini menunjukkan bahwa pengguna tersebut memiliki ketertarikan yang kuat terhadap lokasi yang menawarkan pengalaman rekreasi dan budaya. Selain itu, model juga memberikan daftar sepuluh rekomendasi tempat teratas yang beragam, termasuk Taman Pintar Yogyakarta, Taman Pelangi Yogyakarta, Bentara Budaya Yogyakarta (BBY), Pantai Patihan, Pantai Greweng, Kampung Korea Bandung, Sanghyang Heuleut, Chingu Cafe Little Seoul, Wisata Lereng Kelir, dan Hutan Bambu Keputih. Rekomendasi ini mencakup berbagai jenis tempat, mulai dari taman dan pantai hingga kafe dan lokasi budaya, menunjukkan keberhasilan model dalam mengidentifikasi tempat populer di kalangan pengguna lain dengan preferensi serupa
+
 # Evaluation
-## Evaluation of Content-Based Filtering Model Result
+## Content-Based Filtering Model Result
 Pada hasil oleh model Content-Based Filtering, Dibuat sebanyak 3 skenario untuk melakukan rekomendasi. Dalam hal ini akan diuji N sebanyak 10 rekomendasi tempat wisata dengan kategorinya. 
 
 Pada bagian ini, Metrik evaluasi yang digunakan adalah recommender system precision. Disini precision merupakan jumlah item yang direkomendasikan yang relevan.
 
 ![precision formula](https://raw.githubusercontent.com/farhanrn/Indonesia-Tourism-Recommender-System/refs/heads/main/src/precision.png)
 
-### Hasil pada Skenario 1
-Skenario 1 adalah mencari rekomendasi tempat pada **Candi Prambanan**
-```
-# Skenario 1 : Candi Prambanan
-recommend_by_content_based_filtering('Candi Prambanan')
-```
-hasilnya adalah 
-| Place_Name   | Category       | similarity_score |
-|:-------------|:---------------:|------------------|
-| Keraton Yogyakarta     | Budaya         | 0.634871          |
-| Tebing Breksi           | Budaya         | 0.553593          |
-| Candi Donotirto         | Budaya         | 0.488287          |
-| Puncak Pinus Becici      | Taman Hiburan   | 0.407251          |
-| Candi Borobudur         | Budaya         | 0.305599          |
-| Candi Ijo               | Budaya         | 0.222767          |
-| Candi Ratu Boko         | Budaya         | 0.207963          |
-| Candi Sewu              | Budaya         | 0.170799          |
-| Candi Gedong Songo      | Budaya         | 0.096699          |
-| Pura Giri Natha         | Budaya         | 0.096278          |
-
+Skenario 1
 
 Presisi budaya dapat dihitung dengan menggunakan rumus berikut:
 ```
@@ -568,27 +698,7 @@ Di mana:
 - **10** adalah total jumlah prediksi positif.
 
 
-### Hasil pada Skenario 2
-Skenario 2 adalah mencari rekomendasi tempat pada **Museum Basoeki Abdullah**
-```
-# Case 2 : Museum Basoeki Abdullah
-recommend_by_content_based_filtering('Museum Basoeki Abdullah')
-```
-
-Hasil dari kode :
-| Place_Name                          | Category | similarity_score |
-|-------------------------------------|----------|------------------|
-| Museum Taman Prasasti              | Budaya   | 0.249897         |
-| Museum Wayang                       | Budaya   | 0.215493         |
-| Museum Nasional                     | Budaya   | 0.212838         |
-| Museum Bahari Jakarta               | Budaya   | 0.209531         |
-| Museum Seni Rupa dan Kramik        | Budaya   | 0.207353         |
-| Museum Tengah Kebun                 | Budaya   | 0.203953         |
-| De Mata Museum Jogja                | Budaya   | 0.197842         |
-| Museum Sonobudoyo Unit I            | Budaya   | 0.190391         |
-| Museum Barli                        | Budaya   | 0.185569         |
-| Museum Pendidikan Nasional           | Budaya   | 0.174056         |
-
+Skenario 2
 ```
 Presisi Budaya = (10/10)*100 = 100%
 ```
@@ -597,25 +707,7 @@ Di mana:
 - **10** adalah jumlah prediksi positif yang benar pada kategori budaya.
 - **10** adalah total jumlah prediksi positif.
 
-### Hasil pada Skenario 3
-Skenario 3 adalah mencari rekomendasi tempat pada **Dunia Fantasi**
-
-`recommend_by_content_based_filtering('Dunia Fantasi')`
-
-menghasilkan output 
-| Place_Name                                | Category      | similarity_score |
-|-------------------------------------------|---------------|------------------|
-| Taman Mini Indonesia Indah (TMII)        | Taman Hiburan | 0.469224         |
-| Taman Impian Jaya Ancol                  | Taman Hiburan | 0.189286         |
-| Pelabuhan Marina                          | Bahari       | 0.140093         |
-| Kidzania                                  | Taman Hiburan | 0.129180         |
-| Sea World                                 | Taman Hiburan | 0.119722         |
-| Jakarta Aquarium dan Safari               | Taman Hiburan | 0.119421         |
-| Taman Situ Lembang                        | Taman Hiburan | 0.116117         |
-| Pantai Ancol                              | Bahari       | 0.114812         |
-| Taman Spathodea                          | Taman Hiburan | 0.113678         |
-| Taman Balai Kota Bandung                  | Taman Hiburan | 0.112755         |
-
+Skenario 3
 ```
 Presisi Taman Hiburan = (8/10)*100 = 80%
 ```

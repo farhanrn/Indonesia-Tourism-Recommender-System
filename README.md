@@ -90,6 +90,59 @@ Data user terdiri dari 300 baris dan 3 kolom
 | `Location`   | Lokasi pengguna yang mencakup kota dan provinsi.                    | String        |
 | `Age`        | Usia pengguna, dinyatakan dalam tahun.                              | Integer       |
 
+
+## Exploratory Data Analysis
+### Univariate EDA on *place_tourism* dataset
+- Place 
+
+```
+print("Total lokasi wisata :",place_tourism['Place_Name'].nunique())
+output :
+Total lokasi wisata : 437
+```
+Terdapat 437 Data Lokasi Wisata 
+
+- Category
+
+Ada berapa lokasi wisata dalam dataset?
+![](https://raw.githubusercontent.com/farhanrn/Indonesia-Tourism-Recommender-System/refs/heads/main/src/EDA-CATEGORY.png)
+
+Pada distribusi Data Kategori tempat Wisata, Tempat Hiburan menempati posisi teratassebanyak 135 kemudian disusul oleh Budaya sebesar 117. Adapun distribusi pada Kategori Pusat Perbelanjaan adalah sebanyak 15 yang menempati posisi terakhir
+
+- City
+
+Ada berapa lokasi kota wisata dalam dataset?
+
+![](https://raw.githubusercontent.com/farhanrn/Indonesia-Tourism-Recommender-System/refs/heads/main/src/EDA-CITY.png)
+
+Yogyakarta memiliki jumlah terbanyak sebesar 126, selisih 2 dengan Bandung yang sebesar 124. Kemudian Surabaya menjadi yang terakhir sebesar 46 saja
+
+- Pesebaran harga
+
+![](https://raw.githubusercontent.com/farhanrn/Indonesia-Tourism-Recommender-System/refs/heads/main/src/EDA-PRICE.png)
+
+Sebagian besar tempat wisata memiliki harga yang rendah atau gratis. Hal ini terlihat dari tingginya frekuensi pada rentang harga 0 hingga sekitar 25000.
+
+### Univariate EDA on *rating* dataset
+
+![](https://raw.githubusercontent.com/farhanrn/Indonesia-Tourism-Recommender-System/refs/heads/main/src/EDA-RATING-KDE.png)
+
+Berdasarkan grafik distribusi rating tempat wisata dengan KDE, terlihat bahwa sebagian besar tempat wisata mendapatkan rating di rentang 4.0 hingga 4.5. Hal ini menunjukkan bahwa mayoritas tempat wisata di dataset tersebut memiliki kualitas yang baik dan memuaskan bagi pengunjung. Puncak distribusi KDE berada di sekitar rating 4.2, yang mengindikasikan bahwa rating tersebut merupakan rating yang paling umum diberikan oleh pengguna. Selain itu, distribusi rating cenderung condong ke kanan (right-skewed), yang berarti terdapat beberapa tempat wisata dengan rating yang sangat tinggi, meskipun jumlahnya relatif sedikit. Secara keseluruhan, distribusi rating tempat wisata menunjukkan bahwa mayoritas tempat wisata memiliki kualitas yang baik dan memuaskan bagi pengunjung, dengan beberapa tempat wisata yang memiliki rating sangat tinggi.
+
+### Univariate EDA on *user* dataset
+
+- Location
+
+![](https://raw.githubusercontent.com/farhanrn/Indonesia-Tourism-Recommender-System/refs/heads/main/src/EDA-USER-LOCATION.png)
+
+Berdasarkan visualisasi data, terlihat bahwa lokasi wisata terbanyak berada di Jawa Barat, diikuti oleh Semarang dan Yogyakarta. Selanjutnya, yang menjadi tempat lokasi wisata paling sedikit adalah Nganjuk dan Madura
+
+- Age
+
+![](https://raw.githubusercontent.com/farhanrn/Indonesia-Tourism-Recommender-System/refs/heads/main/src/EDA-USER-AGE.png)
+
+Berdasarkan analisis distribusi usia pengunjung, diketahui bahwa mayoritas pengunjung berusia antara 20 hingga 30 tahun. Distribusi data usia cenderung terdistribusi normal dengan sedikit kemiringan ke kanan (right-skewed), mengindikasikan adanya beberapa pengunjung dengan usia yang lebih tua. Meskipun terdapat outlier pada data usia, namun secara umum dapat disimpulkan bahwa tempat wisata tersebut lebih banyak dikunjungi oleh kalangan muda. Hal ini dapat menjadi pertimbangan dalam strategi pemasaran dan pengembangan produk wisata yang disesuaikan dengan preferensi dan kebutuhan pengunjung dari rentang usia tersebut.
+
 # Data Preparation
 ## Content Based Filtering
 
@@ -114,7 +167,6 @@ Dataset setelah dilakukan handling
 Karena kolom `unnamed:11` dan `Unnamed: 12` tidak diinginkan, sehingga dikeluarkan saja
 
 ``place_tourism.drop(['Unnamed: 11', 'Unnamed: 12'], axis=1, inplace=True)``
-
 
 
 ### Feature Selection for Place_tourism
@@ -272,60 +324,6 @@ Selanjutnya, kode membuat variabel y, yang berisi rating tempat yang telah dinor
 Setelah itu, **data dibagi menjadi dua set: 80% untuk data pelatihan (train) dan 20% untuk data validasi (validation)**. Indeks pemisahan ditentukan dengan menghitung 80% dari jumlah total baris dalam dataframe. Kemudian, x_train dan y_train berisi data pelatihan, sedangkan x_val dan y_val berisi data validasi.
 
 Terakhir, kode mencetak nilai dari x dan y, memberikan gambaran tentang data yang telah dipersiapkan untuk digunakan dalam pelatihan model rekomendasi. Proses ini penting untuk memastikan bahwa model dapat belajar dari data yang representatif dan juga dapat diuji pada data yang tidak terlihat sebelumnya untuk mengevaluasi performanya.
-
-
-## Exploratory Data Analysis
-### Univariate EDA on *place_tourism* dataset
-- Place 
-
-```
-print("Total lokasi wisata :",place_tourism['Place_Name'].nunique())
-output :
-Total lokasi wisata : 437
-```
-Terdapat 437 Data Lokasi Wisata 
-
-- Category
-
-Ada berapa lokasi wisata dalam dataset?
-![](https://raw.githubusercontent.com/farhanrn/Indonesia-Tourism-Recommender-System/refs/heads/main/src/EDA-CATEGORY.png)
-
-Pada distribusi Data Kategori tempat Wisata, Tempat Hiburan menempati posisi teratassebanyak 135 kemudian disusul oleh Budaya sebesar 117. Adapun distribusi pada Kategori Pusat Perbelanjaan adalah sebanyak 15 yang menempati posisi terakhir
-
-- City
-
-Ada berapa lokasi kota wisata dalam dataset?
-
-![](https://raw.githubusercontent.com/farhanrn/Indonesia-Tourism-Recommender-System/refs/heads/main/src/EDA-CITY.png)
-
-Yogyakarta memiliki jumlah terbanyak sebesar 126, selisih 2 dengan Bandung yang sebesar 124. Kemudian Surabaya menjadi yang terakhir sebesar 46 saja
-
-- Pesebaran harga
-
-![](https://raw.githubusercontent.com/farhanrn/Indonesia-Tourism-Recommender-System/refs/heads/main/src/EDA-PRICE.png)
-
-Sebagian besar tempat wisata memiliki harga yang rendah atau gratis. Hal ini terlihat dari tingginya frekuensi pada rentang harga 0 hingga sekitar 25000.
-
-### Univariate EDA on *rating* dataset
-
-![](https://raw.githubusercontent.com/farhanrn/Indonesia-Tourism-Recommender-System/refs/heads/main/src/EDA-RATING-KDE.png)
-
-Berdasarkan grafik distribusi rating tempat wisata dengan KDE, terlihat bahwa sebagian besar tempat wisata mendapatkan rating di rentang 4.0 hingga 4.5. Hal ini menunjukkan bahwa mayoritas tempat wisata di dataset tersebut memiliki kualitas yang baik dan memuaskan bagi pengunjung. Puncak distribusi KDE berada di sekitar rating 4.2, yang mengindikasikan bahwa rating tersebut merupakan rating yang paling umum diberikan oleh pengguna. Selain itu, distribusi rating cenderung condong ke kanan (right-skewed), yang berarti terdapat beberapa tempat wisata dengan rating yang sangat tinggi, meskipun jumlahnya relatif sedikit. Secara keseluruhan, distribusi rating tempat wisata menunjukkan bahwa mayoritas tempat wisata memiliki kualitas yang baik dan memuaskan bagi pengunjung, dengan beberapa tempat wisata yang memiliki rating sangat tinggi.
-
-### Univariate EDA on *user* dataset
-
-- Location
-
-![](https://raw.githubusercontent.com/farhanrn/Indonesia-Tourism-Recommender-System/refs/heads/main/src/EDA-USER-LOCATION.png)
-
-Berdasarkan visualisasi data, terlihat bahwa lokasi wisata terbanyak berada di Jawa Barat, diikuti oleh Semarang dan Yogyakarta. Selanjutnya, yang menjadi tempat lokasi wisata paling sedikit adalah Nganjuk dan Madura
-
-- Age
-
-![](https://raw.githubusercontent.com/farhanrn/Indonesia-Tourism-Recommender-System/refs/heads/main/src/EDA-USER-AGE.png)
-
-Berdasarkan analisis distribusi usia pengunjung, diketahui bahwa mayoritas pengunjung berusia antara 20 hingga 30 tahun. Distribusi data usia cenderung terdistribusi normal dengan sedikit kemiringan ke kanan (right-skewed), mengindikasikan adanya beberapa pengunjung dengan usia yang lebih tua. Meskipun terdapat outlier pada data usia, namun secara umum dapat disimpulkan bahwa tempat wisata tersebut lebih banyak dikunjungi oleh kalangan muda. Hal ini dapat menjadi pertimbangan dalam strategi pemasaran dan pengembangan produk wisata yang disesuaikan dengan preferensi dan kebutuhan pengunjung dari rentang usia tersebut.
-
 
 # Modeling and Result
 ## Content-Based Filtering
